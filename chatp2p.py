@@ -15,31 +15,38 @@ class Client:
 	rThread = None
 	hmThread = None
 
-	def __init__(self, address, uname):
+	def __init__(self, address, uname, flag):
 		self.ip = socket.gethostbyname(socket.gethostname())
 		self.userid = uname
 		self.hostip = address
 
-		if self.ip != self.hostip: 
+		if flag == 1: 
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			self.sock.connect((address, 10000))
 
-			self.sock.send(bytes(self.userid + "(" + self.ip + ") is connected."))
+			self.sock.send(bytes(self.userid + "(" + self.ip + ") is connected.", 'utf-8'))
 
 			self.sThread = threading.Thread(target=self.sendMsg, args=(self.sock,), name='send')
 			self.sThread.daemon = True
 			self.sThread.start()
 
-			self.rThread = threading.Thread(target=self.recvMsg, args=(self.sock,), name='recv')
-			self.rThread.daemon = True
-			self.rThread.start()
+			while True:
+				data = self.sock.recv(1024)
+				if not data:
+					break
+				if data[0:1] == b'\x10':
+					self.reconnect(str(data[1:], 'utf-8'))
+				elif data[0:1] == b'\x11':
+					self.updatePeers(data[1:])
+				else:
+					print(str(data, 'utf-8'))
 
-		else:
+		elif flag == 2:
 			self.peers.append(self.ip)
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			self.sock.bind(('0.0.0.0', 10000))
+			self.sock.bind(('', 10000))
 			self.sock.listen(1)
 			print("Chat room hosted. Host-IP : " + self.ip)
 
@@ -66,6 +73,9 @@ class Client:
 						connection.send(b'\x10' + bytes(newHost, 'utf-8'))
 					sys.exit(0)
 					##############################
+		else:
+			print("flag wrong.")
+			pass
 
 	def becomeHost():
 		self.peers.append(self.ip)
@@ -73,7 +83,7 @@ class Client:
 
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		self.sock.bind(('0.0.0.0', 10000))
+		self.sock.bind(('', 10000))
 		self.sock.listen(1)
 		print("Chat room hosted. Host-IP : " + self.ip)
 
@@ -118,9 +128,16 @@ class Client:
 			self.sThread.daemon = True
 			self.sThread.start()
 
-			self.rThread = threading.Thread(target=self.recvMsg, args=(self.sock,), name='recv')
-			self.rThread.daemon = True
-			self.rThread.start()
+			while True:
+				data = self.sock.recv(1024)
+				if not data:
+					break
+				if data[0:1] == b'\x10':
+					self.reconnect(str(data[1:], 'utf-8'))
+				elif data[0:1] == b'\x11':
+					self.updatePeers(data[1:])
+				else:
+					print(str(data, 'utf-8'))
 
 	def hostMsg(self):
 		while True:
@@ -158,18 +175,6 @@ class Client:
 	def sendMsg(self, sock):
 		while True:
 			sock.send(bytes(self.userid + "(" + self.ip + ")" + ":" + input(""), 'utf-8'))
-
-	def recvMsg(self, sock):
-		while True:
-			data = sock.recv(1024)
-			if not data:
-				break
-			if data[0:1] == b'\x10':
-				self.reconnect(str(data[1:], 'utf-8'))
-			elif data[0:1] == b'\x11':
-				self.updatePeers(data[1:])
-			else:
-				print(str(data, 'utf-8'))
 	
 	def updatePeers(self, peerData):
 		self.peers = str(peerData, 'utf-8').split(',')
@@ -185,31 +190,53 @@ def main():
 	c = input()
 	un = ""
 	hip = ""
+	flag = 0
+	# if c == '1':
+	# 	print("enter username and host-IP")
+	# 	un = input()
+	# 	hip = input()
+	# 	check = 1
+	# 	while check == 1:
+	# 		try:
+	# 			client = Client(hip, un)
+	# 			check = 0
+	# 			print("client created.")
+	# 		except (KeyboardInterrupt, EOFError) as e:
+	# 			check = 0
+	# 			sys.exit(0)
+	# 		except:
+	# 			print("!could not connect! retrying ...")
+	# 			time.sleep(3)
+
+	# elif c == '2':
+	# 	print("enter username")
+	# 	un = input()
+	# 	hip = socket.gethostbyname(socket.gethostname())
+	# 	client = Client(hip, un)
+
+	# else:
+	# 	print("invalid input. exiting ...")
+	# 	sys.exit(0)
+
 	if c == '1':
-		print("enter username and host-IP")
-		un = input()
+		print("Enter your username, followed by the host's IP address.")
+		uname = input()
 		hip = input()
-		check = 1
-		while check == 1:
-			try:
-				client = Client(hip, un)
-			except (KeyboardInterrupt, EOFError) as e:
-				check = 0
-				sys.exit(0)
-			except:
-				print("!could not connect! retrying ...")
-				time.sleep(3)
-
+		flag = 1
 	elif c == '2':
-		print("enter username")
-		un = input()
+		print("Enter username.")
+		uname = input()
 		hip = socket.gethostbyname(socket.gethostname())
-		client = Client(hip, un)
-
+		flag = 2
 	else:
-		print("invalid input. exiting ...")
+		print("Wrong input.")
 		sys.exit(0)
 
+	count = 0
+	check = True
+
+	client = Client(hip, uname, flag)
+	print("running.")
 
 if __name__ == "__main__":
 	main()
