@@ -46,7 +46,7 @@ class Client:
 			self.peers.append(self.ip)
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			self.sock.bind(('', 10000))
+			self.sock.bind(('', 10000)) #######
 			self.sock.listen(1)
 			print("Chat room hosted. Host-IP : " + self.ip)
 
@@ -83,7 +83,7 @@ class Client:
 
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		self.sock.bind(('', 10000))
+		self.sock.bind(('', 10000)) ###########
 		self.sock.listen(1)
 		print("Chat room hosted. Host-IP : " + self.ip)
 
@@ -122,7 +122,7 @@ class Client:
 			time.sleep(3)
 			self.sock.connect((newip, 10000))
 
-			self.sock.send(bytes(self.userid + "(" + self.ip + ") is connected."))
+			self.sock.send(bytes(self.userid + "(" + self.ip + ") is connected.", 'utf-8'))
 
 			self.sThread = threading.Thread(target=self.sendMsg, args=(self.sock,), name='send')
 			self.sThread.daemon = True
@@ -191,32 +191,7 @@ def main():
 	un = ""
 	hip = ""
 	flag = 0
-	# if c == '1':
-	# 	print("enter username and host-IP")
-	# 	un = input()
-	# 	hip = input()
-	# 	check = 1
-	# 	while check == 1:
-	# 		try:
-	# 			client = Client(hip, un)
-	# 			check = 0
-	# 			print("client created.")
-	# 		except (KeyboardInterrupt, EOFError) as e:
-	# 			check = 0
-	# 			sys.exit(0)
-	# 		except:
-	# 			print("!could not connect! retrying ...")
-	# 			time.sleep(3)
 
-	# elif c == '2':
-	# 	print("enter username")
-	# 	un = input()
-	# 	hip = socket.gethostbyname(socket.gethostname())
-	# 	client = Client(hip, un)
-
-	# else:
-	# 	print("invalid input. exiting ...")
-	# 	sys.exit(0)
 
 	if c == '1':
 		print("Enter your username, followed by the host's IP address.")
